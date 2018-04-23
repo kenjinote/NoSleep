@@ -41,7 +41,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		{
 			return BROADCAST_QUERY_DENY;
 		}
-		return DefWindowProc(hWnd, msg, wParam, lParam);
+		return DefDlgProc(hWnd, msg, wParam, lParam);
 	case WM_CLOSE:
 		DestroyWindow(hWnd);
 		break;
