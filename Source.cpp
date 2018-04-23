@@ -11,7 +11,8 @@ TCHAR szClassName[] = TEXT("Window");
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	static HWND hCheck;
+	static HWND hCheck1;
+	static HWND hCheck2;
 	static HFONT hFont;
 	static DOUBLE dControlHeight = 32.0;
 	switch (msg)
@@ -29,19 +30,54 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 			CloseThemeData(hTheme);
 		}
-		hCheck = CreateWindow(TEXT("Button"), TEXT("スリープ状態を回避(&S)"), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 0, 0, 0, 0, hWnd, 0, ((LPCREATESTRUCT)(lParam))->hInstance, 0);
-		SendMessage(hCheck, WM_SETFONT, (WPARAM)hFont, 0);
-		SendMessage(hCheck, BM_SETCHECK, 1, 0);
+		hCheck1 = CreateWindow(TEXT("Button"), TEXT("スリープ状態を回避(&S)"), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 0, 0, 0, 0, hWnd, (HMENU)1000, ((LPCREATESTRUCT)(lParam))->hInstance, 0);
+		SendMessage(hCheck1, WM_SETFONT, (WPARAM)hFont, 0);
+		SendMessage(hCheck1, BM_SETCHECK, 1, 0);
+		SendMessage(hWnd, WM_COMMAND, 1000, 0);
+		hCheck2 = CreateWindow(TEXT("Button"), TEXT("スクリーンセーバーを回避(&C)"), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 0, 0, 0, 0, hWnd, (HMENU)1001, ((LPCREATESTRUCT)(lParam))->hInstance, 0);
+		SendMessage(hCheck2, WM_SETFONT, (WPARAM)hFont, 0);
+		SendMessage(hCheck2, BM_SETCHECK, 1, 0);
+		SendMessage(hWnd, WM_COMMAND, 1001, 0);
 		break;
 	case WM_SIZE:
-		MoveWindow(hCheck, 10, 10, 256, (int)dControlHeight, TRUE);
+		MoveWindow(hCheck1, 10, 10, LOWORD(lParam) - 20, (int)dControlHeight, TRUE);
+		MoveWindow(hCheck2, 10, (int)(dControlHeight + 20), LOWORD(lParam) - 20, (int)dControlHeight, TRUE);
 		break;
-	case WM_POWERBROADCAST:
-		if (BST_CHECKED == SendMessage(hCheck, BM_GETCHECK, 0, 0))
+	case WM_COMMAND:
+		if (LOWORD(wParam) == 1000)
 		{
-			return BROADCAST_QUERY_DENY;
+			if (SendMessage(hCheck1, BM_GETCHECK, 0, 0))
+			{
+				SetThreadExecutionState(ES_SYSTEM_REQUIRED | ES_CONTINUOUS);
+			}
+			else
+			{
+				SetThreadExecutionState(ES_CONTINUOUS);
+			}
 		}
-		return DefDlgProc(hWnd, msg, wParam, lParam);
+		else if (LOWORD(wParam) == 1001)
+		{
+			if (SendMessage(hCheck1, BM_GETCHECK, 0, 0))
+			{
+				SetTimer(hWnd, 0x1234, 30 * 1000, 0);
+			}
+			else
+			{
+				KillTimer(hWnd, 0x1234);
+			}
+		}
+		break;
+	case WM_TIMER:
+		{
+			SetThreadExecutionState(ES_DISPLAY_REQUIRED);
+			INPUT input = { 0 };
+			input.type = INPUT_MOUSE;
+			input.mi.dwFlags = MOUSEEVENTF_MOVE;
+			input.mi.dx = 0;
+			input.mi.dy = 0;
+			SendInput(1, &input, sizeof(INPUT));
+		}
+		break;
 	case WM_CLOSE:
 		DestroyWindow(hWnd);
 		break;
